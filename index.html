@@ -58,7 +58,7 @@
     document.getElementById("abrirChat").addEventListener("click", function() {
       const base = "https://tawk.to/chat/6ada66eb3ac89a346526b3ec/1k5ii42l2?layout=modern";
       const destino = base + "&maquina=" + encodeURIComponent(maquina);
-      localStorage.setItem("MAQUINA", 51401);
+      localStorage.setItem("MAQUINA", MAQUINA);
       window.location.href = destino;
     });
   </script>
