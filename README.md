@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atención Monticello</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      text-align: center;
+      padding: 30px 16px;
+      margin: 0;
+    }
+    .panel {
+      max-width: 420px;
+      margin: auto;
+      padding: 24px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px #0001;
+    }
+    h1 { color: #222; }
+    p { color: #555; line-height: 1.5; }
+    .maquina {
+      font-size: 24px;
+      font-weight: bold;
+      color: #168b42;
+      margin: 20px 0;
+    }
+    button {
+      background: #168b42;
+      color: white;
+      border: 0;
+      padding: 15px 24px;
+      border-radius: 8px;
+      font-size: 17px;
+      width: 100%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>Atención Monticello</h1>
+    <p>Solicita ayuda a nuestro equipo de atención.</p>
+    <p>Máquina identificada:</p>
+    <div class="maquina" id="maquina">No identificada</div>
+    <button id="abrirChat">Solicitar asistencia</button>
+    <p>Un trabajador atenderá tu solicitud por chat.</p>
+  </main>
+
+  <script>
+    const parametros = new URLSearchParams(location.search);
+    const maquina = parametros.get("maquina") || "No identificada";
+    document.getElementById("maquina").textContent = maquina;
+
+    document.getElementById("abrirChat").addEventListener("click", function() {
+      const base = "https://tawk.to/chat/6ada66eb3ac89a346526b3ec/1k5ii42l2?layout=modern";
+      const destino = base + "?maquina=" + encodeURIComponent(maquina);
+      window.location.href = destino;
+    });
+  </script>
+</body>
+</html>
