@@ -56,9 +56,16 @@
 
   document.getElementById("maquina").textContent = maquina;
 
-  document.getElementById("abrirChat").addEventListener("click", function () {
-  window.location.href ="https://tawk.to/chat/6ada66eb3ac89a346526b3ec/1k5iqq6dv?layout=modern";
-  });
+ document.getElementById("abrirChat").addEventListener("click", function () {
+  const maquina = new URLSearchParams(window.location.search)
+    .get("maquina") || "No identificada";
+
+  const mensaje = "Hola, necesito asistencia en la máquina " + maquina;
+
+  const destino = "https://tawk.to/chat/6ada66eb3ac89a346526b3ec/1k5iqq6dv?layout=modern";
+
+  window.open(destino, "_blank");
+});
 </script>
 </body>
 </html>
