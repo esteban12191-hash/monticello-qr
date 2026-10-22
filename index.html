@@ -51,14 +51,13 @@
   </main>
 
   <script>
-    const parametros = new URLSearchParams(location.search);
+    const parametros = new URLSearchParams(window.location.search);
     const maquina = parametros.get("maquina") || "No identificada";
     document.getElementById("maquina").textContent = maquina;
 
    document.getElementById("abrirChat").addEventListener("click", function() {
     const parametros = new URLSearchParams(window.location.search);
-    const maquina = parametros.get("maquina") || "No identificada";
-
+ const maquina = parametros.get("maquina") || localStorage.getItem("maquina") || "No identificada";
     localStorage.setItem("maquina", maquina);
 
     const base = "https://tawk.to/chat/6ada66eb3ac89a346526b3ec/1k5i14212?layout=modern";
