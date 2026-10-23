@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f8">
   <title>Atención Monticello</title>
 
   <style>
@@ -33,7 +34,7 @@
       font-weight: bold;
       color: #168b42;
       margin: 18px 0 8px;
-      overflow-wrap: anywhere;
+      min-height: 36px;
     }
 
     .ayuda {
@@ -103,7 +104,7 @@
     <div class="maquina" id="numeroMostrado">_____</div>
     <div class="ayuda">Máquinas 60101 al 61608</div>
 
-    <div class="teclado">
+    <div class="teclado" aria-label="Teclado numérico">
       <button type="button" class="tecla" data-num="1">1</button>
       <button type="button" class="tecla" data-num="2">2</button>
       <button type="button" class="tecla" data-num="3">3</button>
@@ -130,7 +131,7 @@
     const MIN_MAQUINA = 60101;
     const MAX_MAQUINA = 61608;
 
-    const parametros = new URLSearchParams(location.search);
+    const parametros = new URLSearchParams(window.location.search);
     const maquinaQR = parametros.get("maquina");
 
     let numero = "";
@@ -141,14 +142,14 @@
     const estado = document.getElementById("estado");
     const boton = document.getElementById("abrirChat");
 
-    // Preparar la API ANTES de cargar el widget.
+    // Preparar Tawk.to antes de cargar su script.
     window.Tawk_API = window.Tawk_API || {};
 
     function esValido(valor) {
       const n = Number(valor);
       return /^\d{5}$/.test(valor) &&
-             n >= MIN_MAQUINA &&
-             n <= MAX_MAQUINA;
+        n >= MIN_MAQUINA &&
+        n <= MAX_MAQUINA;
     }
 
     function actualizarPantalla() {
@@ -161,14 +162,13 @@
       estado.className = "estado " + (tipo || "");
     }
 
-    function actualizarAtributo(callback) {
+    function registrarMaquina(callback) {
       if (!chatCargado ||
           typeof window.Tawk_API.setAttributes !== "function") {
         callback(new Error("El chat todavía no está listo."));
         return;
       }
 
-      // Se toma el número ACTUAL, no el del primer QR.
       const maquinaSeleccionada = numero;
 
       window.Tawk_API.setAttributes(
@@ -213,12 +213,9 @@
       procesando = true;
       actualizarPantalla();
 
-      // Guardar el número exacto confirmado por el cliente.
-      const numeroConfirmado = numero;
-
-      actualizarAtributo(function(error, maquinaGuardada) {
+      registrarMaquina(function(error, maquinaGuardada) {
         if (error) {
-          console.error("Error al actualizar atributo:", error);
+          console.error("Error al registrar la máquina:", error);
           procesando = false;
           actualizarPantalla();
           mostrarEstado(
@@ -232,10 +229,20 @@
           "Hola, necesito ayuda con la máquina " +
           maquinaGuardada + ".";
 
+        // Abrir el chat después de registrar la máquina.
         if (typeof window.Tawk_API.maximize === "function") {
           window.Tawk_API.maximize();
+        } else {
+          mostrarEstado(
+            "La máquina fue registrada, pero el chat aún no está disponible.",
+            "error"
+          );
+          procesando = false;
+          actualizarPantalla();
+          return;
         }
 
+        // Preparar el mensaje en el cuadro de escritura.
         if (typeof window.Tawk_API.setChatInputMessage === "function") {
           window.Tawk_API.setChatInputMessage(
             mensaje,
@@ -244,11 +251,10 @@
               actualizarPantalla();
 
               if (errorMensaje) {
-                console.error("Error al preparar mensaje:", errorMensaje);
+                console.error("Error al preparar el mensaje:", errorMensaje);
                 mostrarEstado(
                   "Máquina " + maquinaGuardada +
-                  " registrada. Escribe este mensaje en el chat: " +
-                  mensaje,
+                  " registrada. Escribe en el chat: " + mensaje,
                   "correcto"
                 );
               } else {
@@ -272,20 +278,21 @@
       });
     });
 
-    // El QR propone el número inicial, pero se puede cambiar.
+    // Si el QR contiene una máquina válida, cargarla automáticamente.
     if (maquinaQR && esValido(maquinaQR)) {
       numero = maquinaQR;
     }
 
     actualizarPantalla();
 
+    // Detectar cuando el widget termina de cargar.
     window.Tawk_API.onLoad = function() {
       chatCargado = true;
-      console.log("Chat Tawk.to cargado.");
+      console.log("Tawk.to está listo.");
     };
   </script>
 
-  <!-- Tawk.to: mantener el mismo identificador del chat -->
+  <!-- Tawk.to -->
   <script type="text/javascript">
     var Tawk_LoadStart = new Date();
 
