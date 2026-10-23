@@ -9,11 +9,11 @@
       font-family: Arial, sans-serif;
       background: #f4f6f8;
       text-align: center;
-      padding: 24px 16px;
+      padding: 30px 16px;
       margin: 0;
     }
     .panel {
-      max-width: 360px;
+      max-width: 420px;
       margin: auto;
       padding: 24px;
       background: white;
@@ -22,150 +22,70 @@
     }
     h1 { color: #222; }
     p { color: #555; line-height: 1.5; }
-    #numero {
-      box-sizing: border-box;
-      width: 100%;
-      font-size: 30px;
-      text-align: center;
-      padding: 15px;
-      margin: 10px 0 16px;
-      border: 2px solid #d5dbe0;
-      border-radius: 8px;
-      letter-spacing: 3px;
-    }
-    .teclado {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
+    .maquina {
+      font-size: 24px;
+      font-weight: bold;
+      color: #168b42;
+      margin: 20px 0;
     }
     button {
-      border: 0;
-      border-radius: 8px;
-      padding: 16px 8px;
-      font-size: 18px;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-    .tecla {
-      background: #e8edf0;
-      color: #222;
-      min-height: 52px;
-      font-weight: bold;
-    }
-    .secundario { background: #687782; color: white; }
-    #enviar {
       background: #168b42;
       color: white;
+      border: 0;
+      padding: 15px 24px;
+      border-radius: 8px;
+      font-size: 17px;
       width: 100%;
-      font-weight: bold;
+      cursor: pointer;
     }
-    #estado { min-height: 24px; font-size: 14px; }
   </style>
 </head>
 <body>
   <main class="panel">
     <h1>Atención Monticello</h1>
-    <p>Ingresa el número de la máquina donde necesitas ayuda.</p>
-
-    <input id="numero" value="" readonly aria-label="Número de máquina"
-      placeholder="N.º de máquina">
-
-    <div class="teclado">
-      <button type="button" class="tecla" data-num="1">1</button>
-      <button type="button" class="tecla" data-num="2">2</button>
-      <button type="button" class="tecla" data-num="3">3</button>
-      <button type="button" class="tecla" data-num="4">4</button>
-      <button type="button" class="tecla" data-num="5">5</button>
-      <button type="button" class="tecla" data-num="6">6</button>
-      <button type="button" class="tecla" data-num="7">7</button>
-      <button type="button" class="tecla" data-num="8">8</button>
-      <button type="button" class="tecla" data-num="9">9</button>
-      <button type="button" class="secundario" id="borrar">Borrar</button>
-      <button type="button" class="tecla" data-num="0">0</button>
-      <button type="button" class="secundario" id="retroceso">⌫</button>
-    </div>
-
-    <p id="estado" role="status" aria-live="polite"></p>
-    <button type="button" id="enviar">Solicitar asistencia</button>
-    <p>Se abrirá el chat para enviar tu solicitud.</p>
+    <p>Solicita ayuda a nuestro equipo de atención.</p>
+    <p>Máquina identificada:</p>
+    <div class="maquina" id="maquina">No identificada</div>
+    <button id="abrirChat">Solicitar asistencia</button>
+    <p>Un trabajador atenderá tu solicitud por chat.</p>
   </main>
 
-  <script>
-    var Tawk_API = window.Tawk_API || {};
-    var Tawk_LoadStart = new Date();
+<script>
+const parametros = new URLSearchParams(window.location.search);
+const maquina = parametros.get("maquina") || "No identificada";
 
-    (function () {
-      var s1 = document.createElement("script");
-      var s0 = document.getElementsByTagName("script")[0];
-      s1.async = true;
-      s1.src = "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
-      s1.charset = "UTF-8";
-      s1.setAttribute("crossorigin", "*");
-      s0.parentNode.insertBefore(s1, s0);
-    })();
-  </script>
+document.getElementById("maquina").textContent = maquina;
 
-  <script>
-    const campo = document.getElementById("numero");
-    const estado = document.getElementById("estado");
-    let numero = "";
+window.Tawk_API = window.Tawk_API || {};
 
-    document.querySelectorAll("[data-num]").forEach(function (boton) {
-      boton.addEventListener("click", function () {
-        if (numero.length < 5) {
-          numero += boton.dataset.num;
-          campo.value = numero;
-          estado.textContent = "";
-        }
-      });
-    });
+window.Tawk_API.onLoad = function () {
+  window.Tawk_API.setAttributes({
+    "maquina": maquina
+  }, function (error) {
+    if (error) {
+      console.error("No se pudo registrar la máquina:", error);
+    }
+  });
+};
 
-    document.getElementById("borrar").addEventListener("click", function () {
-      numero = "";
-      campo.value = "";
-      estado.textContent = "";
-    });
-
-    document.getElementById("retroceso").addEventListener("click", function () {
-      numero = numero.slice(0, -1);
-      campo.value = numero;
-      estado.textContent = "";
-    });
-
-    document.getElementById("enviar").addEventListener("click", function () {
-      if (!/^\d{5}$/.test(numero) ||
-          Number(numero) < 10001 || Number(numero) > 11800) {
-        estado.textContent = "Ingresa un número entre 10001 y 11800.";
-        return;
-      }
-
-      estado.textContent = "Abriendo el chat…";
-
-      if (typeof Tawk_API.setAttributes === "function") {
-        Tawk_API.setAttributes({ maquina: numero }, function (error) {
-          if (error) console.error(error);
-        });
-      }
-
-      if (typeof Tawk_API.setChatInputMessage === "function") {
-        Tawk_API.setChatInputMessage(
-          "Solicitud de asistencia para la máquina " + numero + ".",
-          function (error) {
-            if (error) console.error(error);
-          }
-        );
-      }
-
-      if (typeof Tawk_API.maximize === "function") {
-        Tawk_API.maximize();
-        estado.textContent =
-          "Revisa el chat y pulsa Enviar para confirmar la solicitud.";
-      } else {
-        estado.textContent =
-          "El chat está cargando. Espera unos segundos y vuelve a intentarlo.";
-      }
-    });
-  </script>
+document.getElementById("abrirChat").addEventListener("click", function () {
+  if (window.Tawk_API && typeof window.Tawk_API.maximize === "function") {
+    window.Tawk_API.maximize();
+  }
+});
+</script>
+  <!--Start of Tawk.to Script-->
+<script type="text/javascript">
+var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){
+var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true;
+s1.src='https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv';
+s1.charset='UTF-8';
+s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0);
+})();
+</script>
+<!--End of Tawk.to Script-->
 </body>
 </html>
