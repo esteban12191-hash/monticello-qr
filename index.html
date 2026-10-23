@@ -3,15 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f8">
   <title>Atención Monticello</title>
+
   <style>
+    * { box-sizing: border-box; }
+
     body {
       font-family: Arial, sans-serif;
       background: #f4f6f8;
       text-align: center;
-      padding: 30px 16px;
+      padding: 24px 16px;
       margin: 0;
     }
+
     .panel {
       max-width: 420px;
       margin: auto;
@@ -20,72 +25,237 @@
       border-radius: 16px;
       box-shadow: 0 2px 12px #0001;
     }
-    h1 { color: #222; }
+
+    h1 { color: #222; font-size: 27px; }
     p { color: #555; line-height: 1.5; }
+
     .maquina {
-      font-size: 24px;
+      font-size: 27px;
       font-weight: bold;
       color: #168b42;
+      margin: 16px 0 6px;
+      min-height: 32px;
+    }
+
+    .ayuda {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 18px;
+    }
+
+    .teclado {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
       margin: 20px 0;
     }
-    button {
+
+    .tecla {
+      background: #edf1f4;
+      color: #222;
+      border: 1px solid #dce2e7;
+      border-radius: 10px;
+      padding: 16px 8px;
+      min-height: 57px;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .tecla:active { background: #dce5e9; }
+
+    .tecla-secundaria {
+      font-size: 14px;
+      background: #e2e8ec;
+    }
+
+    .principal {
       background: #168b42;
       color: white;
       border: 0;
-      padding: 15px 24px;
-      border-radius: 8px;
+      padding: 16px 20px;
+      border-radius: 9px;
       font-size: 17px;
+      font-weight: bold;
       width: 100%;
       cursor: pointer;
     }
+
+    .principal:disabled {
+      background: #a8b5ad;
+      cursor: not-allowed;
+    }
+
+    .estado {
+      font-size: 14px;
+      min-height: 20px;
+      margin-top: 14px;
+    }
+
+    .error { color: #b42318; }
+    .correcto { color: #168b42; }
   </style>
 </head>
+
 <body>
   <main class="panel">
     <h1>Atención Monticello</h1>
-    <p>Solicita ayuda a nuestro equipo de atención.</p>
-    <p>Máquina identificada:</p>
-    <div class="maquina" id="maquina">No identificada</div>
-    <button id="abrirChat">Solicitar asistencia</button>
+    <p>Ingresa el número de la máquina para solicitar ayuda.</p>
+
+    <div class="maquina" id="numeroMostrado">_____</div>
+    <div class="ayuda">Número de máquina: 10001 al 11800</div>
+
+    <div class="teclado" aria-label="Teclado numérico">
+      <button class="tecla" data-num="1">1</button>
+      <button class="tecla" data-num="2">2</button>
+      <button class="tecla" data-num="3">3</button>
+      <button class="tecla" data-num="4">4</button>
+      <button class="tecla" data-num="5">5</button>
+      <button class="tecla" data-num="6">6</button>
+      <button class="tecla" data-num="7">7</button>
+      <button class="tecla" data-num="8">8</button>
+      <button class="tecla" data-num="9">9</button>
+      <button class="tecla tecla-secundaria" id="borrarTodo">Borrar</button>
+      <button class="tecla" data-num="0">0</button>
+      <button class="tecla tecla-secundaria" id="borrarUno">⌫</button>
+    </div>
+
+    <button class="principal" id="abrirChat" disabled>
+      Solicitar asistencia
+    </button>
+
+    <div class="estado" id="estado" role="status" aria-live="polite"></div>
+
     <p>Un trabajador atenderá tu solicitud por chat.</p>
   </main>
 
-<script>
-const parametros = new URLSearchParams(window.location.search);
-const maquina = parametros.get("maquina") || "No identificada";
+  <script>
+    const MIN_MAQUINA = 10001;
+    const MAX_MAQUINA = 11800;
 
-document.getElementById("maquina").textContent = maquina;
+    const parametros = new URLSearchParams(window.location.search);
+    const maquinaQR = parametros.get("maquina");
 
-window.Tawk_API = window.Tawk_API || {};
+    let numero = "";
+    let chatCargado = false;
 
-window.Tawk_API.onLoad = function () {
-  window.Tawk_API.setAttributes({
-    "maquina": maquina
-  }, function (error) {
-    if (error) {
-      console.error("No se pudo registrar la máquina:", error);
+    const numeroMostrado = document.getElementById("numeroMostrado");
+    const estado = document.getElementById("estado");
+    const botonAsistencia = document.getElementById("abrirChat");
+
+    window.Tawk_API = window.Tawk_API || {};
+
+    function numeroValido(valor) {
+      const n = Number(valor);
+      return /^\d{5}$/.test(valor) &&
+             n >= MIN_MAQUINA &&
+             n <= MAX_MAQUINA;
     }
-  });
-};
 
-document.getElementById("abrirChat").addEventListener("click", function () {
-  if (window.Tawk_API && typeof window.Tawk_API.maximize === "function") {
-    window.Tawk_API.maximize();
-  }
-});
-</script>
-  <!--Start of Tawk.to Script-->
-<script type="text/javascript">
-var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-(function(){
-var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-s1.async=true;
-s1.src='https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv';
-s1.charset='UTF-8';
-s1.setAttribute('crossorigin','*');
-s0.parentNode.insertBefore(s1,s0);
-})();
-</script>
-<!--End of Tawk.to Script-->
+    function actualizarPantalla() {
+      numeroMostrado.textContent = numero || "_____";
+      botonAsistencia.disabled = !numeroValido(numero);
+      estado.textContent = "";
+      estado.className = "estado";
+    }
+
+    function guardarNumeroEnChat(callback) {
+      if (!chatCargado ||
+          typeof window.Tawk_API.setAttributes !== "function") {
+        estado.textContent = "El chat está cargando. Intenta nuevamente.";
+        estado.className = "estado error";
+        return;
+      }
+
+      window.Tawk_API.setAttributes({
+        "maquina": numero
+      }, function(error) {
+        if (error) {
+          console.error("Error al registrar la máquina:", error);
+          estado.textContent =
+            "No se pudo asociar la máquina. Intenta nuevamente.";
+          estado.className = "estado error";
+          return;
+        }
+
+        callback();
+      });
+    }
+
+    document.querySelectorAll("[data-num]").forEach(function(boton) {
+      boton.addEventListener("click", function() {
+        if (numero.length < 5) {
+          numero += boton.dataset.num;
+          actualizarPantalla();
+        }
+      });
+    });
+
+    document.getElementById("borrarTodo").addEventListener("click", function() {
+      numero = "";
+      actualizarPantalla();
+    });
+
+    document.getElementById("borrarUno").addEventListener("click", function() {
+      numero = numero.slice(0, -1);
+      actualizarPantalla();
+    });
+
+    botonAsistencia.addEventListener("click", function() {
+      if (!numeroValido(numero)) {
+        estado.textContent = "Ingresa un número entre 10001 y 11800.";
+        estado.className = "estado error";
+        return;
+      }
+
+      guardarNumeroEnChat(function() {
+        estado.textContent = "Abriendo el chat de atención...";
+        estado.className = "estado correcto";
+
+        if (typeof window.Tawk_API.maximize === "function") {
+          window.Tawk_API.maximize();
+        } else {
+          estado.textContent =
+            "No se pudo abrir el chat. Recarga la página e inténtalo nuevamente.";
+          estado.className = "estado error";
+        }
+      });
+    });
+
+    // Si el QR incluye un número válido, lo carga automáticamente.
+    if (maquinaQR && numeroValido(maquinaQR)) {
+      numero = maquinaQR;
+    }
+
+    actualizarPantalla();
+
+    window.Tawk_API.onLoad = function() {
+      chatCargado = true;
+
+      // Registra el número inicial si el QR identificó la máquina.
+      if (numeroValido(numero)) {
+        guardarNumeroEnChat(function() {});
+      }
+    };
+  </script>
+
+  <!-- Tawk.to -->
+  <script>
+    var Tawk_LoadStart = new Date();
+
+    (function() {
+      var s1 = document.createElement("script");
+      var s0 = document.getElementsByTagName("script")[0];
+
+      s1.async = true;
+      s1.src =
+        "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
+      s1.charset = "UTF-8";
+      s1.setAttribute("crossorigin", "*");
+
+      s0.parentNode.insertBefore(s1, s0);
+    })();
+  </script>
 </body>
 </html>
