@@ -118,9 +118,7 @@
   <main class="panel">
     <h1>Atención Monticello</h1>
 
-    <p>
-      Ingresa el número de la máquina para solicitar ayuda.
-    </p>
+    <p>Ingresa el número de la máquina para solicitar ayuda.</p>
 
     <div class="maquina" id="numeroMostrado">_____</div>
 
@@ -138,63 +136,39 @@
       <button type="button" class="tecla" data-num="7">7</button>
       <button type="button" class="tecla" data-num="8">8</button>
       <button type="button" class="tecla" data-num="9">9</button>
-      <button type="button" class="tecla tecla-secundaria" id="borrarTodo">
-        Borrar
-      </button>
+      <button type="button" class="tecla tecla-secundaria" id="borrarTodo">Borrar</button>
       <button type="button" class="tecla" data-num="0">0</button>
-      <button type="button" class="tecla tecla-secundaria" id="borrarUno">
-        ⌫
-      </button>
+      <button type="button" class="tecla tecla-secundaria" id="borrarUno">⌫</button>
     </div>
 
-    <button
-      type="button"
-      class="principal"
-      id="abrirChat"
-      disabled
-    >
+    <button type="button" class="principal" id="abrirChat" disabled>
       Solicitar asistencia
     </button>
 
-    <div
-      class="estado"
-      id="estado"
-      role="status"
-      aria-live="polite"
-    ></div>
+    <div class="estado" id="estado" role="status" aria-live="polite"></div>
 
     <p>Un trabajador atenderá tu solicitud por chat.</p>
   </main>
 
   <script>
     const MIN_MAQUINA = 60101;
-    const MAX_MAQUINA = 61610;
+    const MAX_MAQUINA = 61608;
 
-    const parametros = new URLSearchParams(
-      window.location.search
-    );
-
+    const parametros = new URLSearchParams(window.location.search);
     const maquinaQR = parametros.get("maquina");
 
     let numero = "";
     let chatCargado = false;
     let solicitudEnCurso = false;
 
-    const numeroMostrado =
-      document.getElementById("numeroMostrado");
+    const numeroMostrado = document.getElementById("numeroMostrado");
+    const estado = document.getElementById("estado");
+    const botonAsistencia = document.getElementById("abrirChat");
 
-    const estado =
-      document.getElementById("estado");
-
-    const botonAsistencia =
-      document.getElementById("abrirChat");
-
-    // Inicializar la API de Tawk.to.
     window.Tawk_API = window.Tawk_API || {};
 
     function numeroValido(valor) {
       const n = Number(valor);
-
       return /^\d{5}$/.test(valor) &&
         n >= MIN_MAQUINA &&
         n <= MAX_MAQUINA;
@@ -202,12 +176,8 @@
 
     function actualizarPantalla() {
       numeroMostrado.textContent = numero || "_____";
-
       botonAsistencia.disabled =
         !numeroValido(numero) || solicitudEnCurso;
-
-      estado.textContent = "";
-      estado.className = "estado";
     }
 
     function mostrarError(mensaje) {
@@ -220,9 +190,7 @@
         !chatCargado ||
         typeof window.Tawk_API.setAttributes !== "function"
       ) {
-        mostrarError(
-          "El chat todavía está cargando. Intenta nuevamente."
-        );
+        mostrarError("El chat está cargando. Intenta nuevamente.");
         callback(false);
         return;
       }
@@ -231,15 +199,8 @@
         { maquina: numero },
         function(error) {
           if (error) {
-            console.error(
-              "Error al registrar la máquina:",
-              error
-            );
-
-            mostrarError(
-              "No se pudo registrar la máquina en el chat."
-            );
-
+            console.error("Error al registrar la máquina:", error);
+            mostrarError("No se pudo registrar la máquina en el chat.");
             callback(false);
             return;
           }
@@ -249,48 +210,42 @@
       );
     }
 
-    // Teclado numérico.
-    document.querySelectorAll("[data-num]").forEach(
-      function(boton) {
-        boton.addEventListener("click", function() {
-          if (numero.length < 5 && !solicitudEnCurso) {
-            numero += boton.dataset.num;
-            actualizarPantalla();
-          }
-        });
+    document.querySelectorAll("[data-num]").forEach(function(boton) {
+      boton.addEventListener("click", function() {
+        if (numero.length < 5 && !solicitudEnCurso) {
+          numero += boton.dataset.num;
+          estado.textContent = "";
+          estado.className = "estado";
+          actualizarPantalla();
+        }
+      });
+    });
+
+    document.getElementById("borrarTodo").addEventListener("click", function() {
+      if (!solicitudEnCurso) {
+        numero = "";
+        estado.textContent = "";
+        estado.className = "estado";
+        actualizarPantalla();
       }
-    );
+    });
 
-    // Borrar todos los dígitos.
-    document.getElementById("borrarTodo")
-      .addEventListener("click", function() {
-        if (!solicitudEnCurso) {
-          numero = "";
-          actualizarPantalla();
-        }
-      });
+    document.getElementById("borrarUno").addEventListener("click", function() {
+      if (!solicitudEnCurso) {
+        numero = numero.slice(0, -1);
+        estado.textContent = "";
+        estado.className = "estado";
+        actualizarPantalla();
+      }
+    });
 
-    // Borrar el último dígito.
-    document.getElementById("borrarUno")
-      .addEventListener("click", function() {
-        if (!solicitudEnCurso) {
-          numero = numero.slice(0, -1);
-          actualizarPantalla();
-        }
-      });
-
-    // Solicitar asistencia.
     botonAsistencia.addEventListener("click", function() {
       if (!numeroValido(numero)) {
-        mostrarError(
-          "Ingresa un número entre 10001 y 11800."
-        );
+        mostrarError("Ingresa un número entre 60101 y 61608.");
         return;
       }
 
-      if (solicitudEnCurso) {
-        return;
-      }
+      if (solicitudEnCurso) return;
 
       solicitudEnCurso = true;
       actualizarPantalla();
@@ -303,82 +258,55 @@
         }
 
         const mensaje =
-          "Hola, necesito ayuda con la máquina " +
-          numero +
-          ".";
+          "Hola, necesito ayuda con la máquina " + numero + ".";
 
-        // Abrir el chat.
-        if (
-          typeof window.Tawk_API.maximize === "function"
-        ) {
+        if (typeof window.Tawk_API.maximize === "function") {
           window.Tawk_API.maximize();
         }
 
-        // Preparar el mensaje en el cuadro de escritura.
         if (
-          typeof window.Tawk_API.setChatInputMessage ===
-          "function"
+          typeof window.Tawk_API.setChatInputMessage === "function"
         ) {
-          window.Tawk_API.setChatInputMessage(
-            mensaje,
-            function(error) {
-              if (error) {
-                console.error(
-                  "No se pudo preparar el mensaje:",
-                  error
-                );
-
-                estado.textContent =
-                  "Máquina registrada. Escribe en el chat: " +
-                  mensaje;
-
-                estado.className = "estado correcto";
-              } else {
-                estado.textContent =
-                  "Mensaje preparado. Pulsa Enviar en el chat.";
-
-                estado.className = "estado correcto";
-              }
-
-              solicitudEnCurso = false;
-              actualizarBoton();
+          window.Tawk_API.setChatInputMessage(mensaje, function(error) {
+            if (error) {
+              console.error("No se pudo preparar el mensaje:", error);
+              estado.textContent =
+                "Máquina registrada. Escribe en el chat: " + mensaje;
+              estado.className = "estado correcto";
+            } else {
+              estado.textContent =
+                "Mensaje preparado. Pulsa Enviar en el chat.";
+              estado.className = "estado correcto";
             }
-          );
+
+            solicitudEnCurso = false;
+            actualizarPantalla();
+          });
         } else {
           estado.textContent =
-            "Máquina registrada. Escribe en el chat: " +
-            mensaje;
-
+            "Máquina registrada. Escribe en el chat: " + mensaje;
           estado.className = "estado correcto";
 
           solicitudEnCurso = false;
-          actualizarBoton();
+          actualizarPantalla();
         }
       });
     });
 
-    function actualizarBoton() {
-      botonAsistencia.disabled = !numeroValido(numero);
-    }
-
-    // Si el QR trae un número válido, cargarlo automáticamente.
+    // Cargar automáticamente el número que viene en el QR.
     if (maquinaQR && numeroValido(maquinaQR)) {
       numero = maquinaQR;
     }
 
     actualizarPantalla();
 
-    // Cuando Tawk.to termine de cargar.
     window.Tawk_API.onLoad = function() {
       chatCargado = true;
 
       if (numeroValido(numero)) {
         registrarMaquina(function(exito) {
           if (exito) {
-            console.log(
-              "Máquina registrada:",
-              numero
-            );
+            console.log("Máquina registrada:", numero);
           }
         });
       }
@@ -394,9 +322,7 @@
       var s0 = document.getElementsByTagName("script")[0];
 
       s1.async = true;
-      s1.src =
-        "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
-
+      s1.src = "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
       s1.charset = "UTF-8";
       s1.setAttribute("crossorigin", "*");
 
