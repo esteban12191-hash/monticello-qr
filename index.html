@@ -13,7 +13,7 @@
       margin: 0;
     }
     .panel {
-      max-width: 420px;
+      max-width: 360px;
       margin: auto;
       padding: 24px;
       background: white;
@@ -22,35 +22,27 @@
     }
     h1 { color: #222; }
     p { color: #555; line-height: 1.5; }
-    .maquina {
-      font-size: 24px;
-      font-weight: bold;
-      color: #168b42;
-      margin: 12px 0 18px;
-    }
-    .pantalla {
-      width: 100%;
+    #numero {
       box-sizing: border-box;
-      font-size: 26px;
+      width: 100%;
+      font-size: 30px;
       text-align: center;
-      padding: 14px;
-      margin: 8px 0 14px;
+      padding: 15px;
+      margin: 10px 0 16px;
       border: 2px solid #d5dbe0;
       border-radius: 8px;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
     }
     .teclado {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     button {
-      background: #168b42;
-      color: white;
       border: 0;
-      padding: 15px 10px;
       border-radius: 8px;
+      padding: 16px 8px;
       font-size: 18px;
       cursor: pointer;
       touch-action: manipulation;
@@ -58,17 +50,15 @@
     .tecla {
       background: #e8edf0;
       color: #222;
-      font-weight: bold;
       min-height: 52px;
+      font-weight: bold;
     }
-    .secundario {
-      background: #687782;
-      font-size: 15px;
-    }
-    #abrirChat { width: 100%; }
-    button:focus-visible, input:focus-visible {
-      outline: 3px solid #80b5ff;
-      outline-offset: 2px;
+    .secundario { background: #687782; color: white; }
+    #enviar {
+      background: #168b42;
+      color: white;
+      width: 100%;
+      font-weight: bold;
     }
     #estado { min-height: 24px; font-size: 14px; }
   </style>
@@ -78,22 +68,10 @@
     <h1>Atención Monticello</h1>
     <p>Ingresa el número de la máquina donde necesitas ayuda.</p>
 
-    <p>Máquina seleccionada:</p>
-    <div class="maquina" id="maquina">No identificada</div>
+    <input id="numero" value="" readonly aria-label="Número de máquina"
+      placeholder="N.º de máquina">
 
-    <input
-      class="pantalla"
-      id="numeroMaquina"
-      type="text"
-      inputmode="none"
-      pattern="[0-9]*"
-      maxlength="5"
-      placeholder="N.º de máquina"
-      aria-label="Número de máquina"
-      readonly
-    >
-
-    <div class="teclado" aria-label="Teclado numérico">
+    <div class="teclado">
       <button type="button" class="tecla" data-num="1">1</button>
       <button type="button" class="tecla" data-num="2">2</button>
       <button type="button" class="tecla" data-num="3">3</button>
@@ -105,15 +83,14 @@
       <button type="button" class="tecla" data-num="9">9</button>
       <button type="button" class="secundario" id="borrar">Borrar</button>
       <button type="button" class="tecla" data-num="0">0</button>
-      <button type="button" class="secundario" id="corregir">⌫</button>
+      <button type="button" class="secundario" id="retroceso">⌫</button>
     </div>
 
     <p id="estado" role="status" aria-live="polite"></p>
-    <button type="button" id="abrirChat">Solicitar asistencia</button>
-    <p>Un trabajador atenderá tu solicitud por chat.</p>
+    <button type="button" id="enviar">Solicitar asistencia</button>
+    <p>Se abrirá el chat para enviar tu solicitud.</p>
   </main>
 
-  <!-- Cargar el chat de Tawk.to -->
   <script>
     var Tawk_API = window.Tawk_API || {};
     var Tawk_LoadStart = new Date();
@@ -130,125 +107,65 @@
   </script>
 
   <script>
-    const parametros = new URLSearchParams(window.location.search);
-    const maquinaQR = parametros.get("maquina");
-    const campo = document.getElementById("numeroMaquina");
-    const etiqueta = document.getElementById("maquina");
+    const campo = document.getElementById("numero");
     const estado = document.getElementById("estado");
-    const botonChat = document.getElementById("abrirChat");
-
     let numero = "";
-
-    // Si se llega desde el QR de una máquina válida, precargarla.
-    if (maquinaQR && /^\d{5}$/.test(maquinaQR) &&
-        Number(maquinaQR) >= 10001 && Number(maquinaQR) <= 11800) {
-      numero = maquinaQR;
-    }
-
-    function actualizarPantalla() {
-      campo.value = numero;
-      etiqueta.textContent = numero || "No identificada";
-      estado.textContent = "";
-    }
 
     document.querySelectorAll("[data-num]").forEach(function (boton) {
       boton.addEventListener("click", function () {
         if (numero.length < 5) {
           numero += boton.dataset.num;
-          actualizarPantalla();
+          campo.value = numero;
+          estado.textContent = "";
         }
       });
     });
 
     document.getElementById("borrar").addEventListener("click", function () {
       numero = "";
-      actualizarPantalla();
+      campo.value = "";
+      estado.textContent = "";
     });
 
-    document.getElementById("corregir").addEventListener("click", function () {
+    document.getElementById("retroceso").addEventListener("click", function () {
       numero = numero.slice(0, -1);
-      actualizarPantalla();
+      campo.value = numero;
+      estado.textContent = "";
     });
 
-    actualizarPantalla();
-
-    botonChat.addEventListener("click", function () {
-  if (!/^\d{5}$/.test(numero) ||
-      Number(numero) < 10001 ||
-      Number(numero) > 11800) {
-    estado.textContent =
-      "Ingresa un número válido entre 10001 y 11800.";
-    return;
-  }
-
-  etiqueta.textContent = numero;
-  estado.textContent = "Preparando solicitud de asistencia…";
-
-  if (!window.Tawk_API ||
-      typeof window.Tawk_API.maximize !== "function") {
-    estado.textContent =
-      "El chat está cargando. Espera unos segundos y vuelve a intentarlo.";
-    return;
-  }
-
-  window.Tawk_API.setAttributes(
-    { maquina: numero },
-    function (error) {
-      if (error) {
-        console.error("Error al registrar la máquina:", error);
-      }
-    }
-  );
-
-  if (typeof window.Tawk_API.setChatInputMessage === "function") {
-    window.Tawk_API.setChatInputMessage(
-      "Solicitud de asistencia para la máquina " + numero + ".",
-      function (error) {
-        if (error) {
-          console.error("No se pudo preparar el mensaje:", error);
-        }
-      }
-    );
-  }
-
-  window.Tawk_API.maximize();
-  estado.textContent = "Revisa el mensaje preparado en el chat y pulsa Enviar.";
-});
+    document.getElementById("enviar").addEventListener("click", function () {
+      if (!/^\d{5}$/.test(numero) ||
+          Number(numero) < 10001 || Number(numero) > 11800) {
+        estado.textContent = "Ingresa un número entre 10001 y 11800.";
+        return;
       }
 
-      etiqueta.textContent = numero;
-      estado.textContent = "Abriendo el chat de asistencia…";
+      estado.textContent = "Abriendo el chat…";
 
-      // Registrar el identificador en Tawk.to antes de abrir el chat.
-      if (window.Tawk_API &&
-          typeof window.Tawk_API.setAttributes === "function") {
-        window.Tawk_API.setAttributes({ "maquina": numero }, function (error) {
-          if (error) {
-            console.error("No se pudo registrar la máquina:", error);
-          }
+      if (typeof Tawk_API.setAttributes === "function") {
+        Tawk_API.setAttributes({ maquina: numero }, function (error) {
+          if (error) console.error(error);
         });
       }
 
-      if (window.Tawk_API &&
-          typeof window.Tawk_API.maximize === "function") {
-        window.Tawk_API.maximize();
+      if (typeof Tawk_API.setChatInputMessage === "function") {
+        Tawk_API.setChatInputMessage(
+          "Solicitud de asistencia para la máquina " + numero + ".",
+          function (error) {
+            if (error) console.error(error);
+          }
+        );
+      }
+
+      if (typeof Tawk_API.maximize === "function") {
+        Tawk_API.maximize();
+        estado.textContent =
+          "Revisa el chat y pulsa Enviar para confirmar la solicitud.";
       } else {
         estado.textContent =
-          "El chat todavía está cargando. Espera unos segundos y vuelve a intentarlo.";
+          "El chat está cargando. Espera unos segundos y vuelve a intentarlo.";
       }
     });
-
-    // Registrar el número también cuando termine de cargar el widget.
-    window.Tawk_API = window.Tawk_API || {};
-    window.Tawk_API.onLoad = function () {
-      if (numero && typeof window.Tawk_API.setAttributes === "function") {
-        window.Tawk_API.setAttributes({ "maquina": numero }, function (error) {
-          if (error) {
-            console.error("No se pudo registrar la máquina:", error);
-          }
-        });
-      }
-    };
   </script>
 </body>
 </html>
