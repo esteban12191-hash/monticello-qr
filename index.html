@@ -209,12 +209,22 @@
         return;
       }
 
-      guardarNumeroEnChat(function() {
-        estado.textContent = "Abriendo el chat de atención...";
-        estado.className = "estado correcto";
+     guardarNumeroEnChat(function() {
+  const mensaje =
+    "Hola, necesito ayuda con la máquina " + numero + ".";
 
-        if (typeof window.Tawk_API.maximize === "function") {
-          window.Tawk_API.maximize();
+  window.Tawk_API.setChatInputMessage(mensaje, function(error) {
+    if (error) {
+      console.error("No se pudo preparar el mensaje:", error);
+    }
+
+    estado.textContent =
+      "El mensaje está preparado. Pulsa Enviar en el chat.";
+    estado.className = "estado correcto";
+
+    window.Tawk_API.maximize();
+  });
+
         } else {
           estado.textContent =
             "No se pudo abrir el chat. Recarga la página e inténtalo nuevamente.";
