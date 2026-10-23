@@ -62,6 +62,8 @@
       cursor: pointer;
     }
 
+    .tecla:active { background: #dce5e9; }
+
     .tecla-secundaria {
       font-size: 14px;
       background: #e2e8ec;
@@ -138,12 +140,11 @@
     let chatCargado = false;
     let procesando = false;
 
+    window.Tawk_API = window.Tawk_API || {};
+
     const numeroMostrado = document.getElementById("numeroMostrado");
     const estado = document.getElementById("estado");
     const boton = document.getElementById("abrirChat");
-
-    // Preparar Tawk.to antes de cargar su script.
-    window.Tawk_API = window.Tawk_API || {};
 
     function esValido(valor) {
       const n = Number(valor);
@@ -160,27 +161,6 @@
     function mostrarEstado(texto, tipo) {
       estado.textContent = texto;
       estado.className = "estado " + (tipo || "");
-    }
-
-    function registrarMaquina(callback) {
-      if (!chatCargado ||
-          typeof window.Tawk_API.setAttributes !== "function") {
-        callback(new Error("El chat todavía no está listo."));
-        return;
-      }
-
-      const maquinaSeleccionada = numero;
-
-      window.Tawk_API.setAttributes(
-        { maquina: maquinaSeleccionada },
-        function(error) {
-          if (error) {
-            callback(error);
-          } else {
-            callback(null, maquinaSeleccionada);
-          }
-        }
-      );
     }
 
     document.querySelectorAll("[data-num]").forEach(function(tecla) {
@@ -213,79 +193,81 @@
       procesando = true;
       actualizarPantalla();
 
-      registrarMaquina(function(error, maquinaGuardada) {
-        if (error) {
-          console.error("Error al registrar la máquina:", error);
-          procesando = false;
-          actualizarPantalla();
-          mostrarEstado(
-            "No se pudo registrar la máquina. Intenta nuevamente.",
-            "error"
-          );
-          return;
-        }
+      const maquinaSeleccionada = numero;
+      const mensaje =
+        "Hola, necesito ayuda con la máquina " +
+        maquinaSeleccionada + ".";
 
-        const mensaje =
-          "Hola, necesito ayuda con la máquina " +
-          maquinaGuardada + ".";
+      // Abrir el chat, independientemente del registro del atributo.
+      if (chatCargado &&
+          typeof window.Tawk_API.maximize === "function") {
+        window.Tawk_API.maximize();
+      }
 
-        // Abrir el chat después de registrar la máquina.
+      function finalizar(texto, tipo) {
+        mostrarEstado(texto, tipo);
+        procesando = false;
+        actualizarPantalla();
+      }
+
+      function prepararMensaje() {
         if (typeof window.Tawk_API.maximize === "function") {
           window.Tawk_API.maximize();
-        } else {
-          mostrarEstado(
-            "La máquina fue registrada, pero el chat aún no está disponible.",
-            "error"
-          );
-          procesando = false;
-          actualizarPantalla();
-          return;
         }
 
-        // Preparar el mensaje en el cuadro de escritura.
         if (typeof window.Tawk_API.setChatInputMessage === "function") {
-          window.Tawk_API.setChatInputMessage(
-            mensaje,
-            function(errorMensaje) {
-              procesando = false;
-              actualizarPantalla();
-
-              if (errorMensaje) {
-                console.error("Error al preparar el mensaje:", errorMensaje);
-                mostrarEstado(
-                  "Máquina " + maquinaGuardada +
-                  " registrada. Escribe en el chat: " + mensaje,
-                  "correcto"
-                );
-              } else {
-                mostrarEstado(
-                  "Máquina " + maquinaGuardada +
-                  " registrada. Revisa el chat y pulsa Enviar.",
-                  "correcto"
-                );
-              }
+          window.Tawk_API.setChatInputMessage(mensaje, function(error) {
+            if (error) {
+              console.error("Error al preparar el mensaje:", error);
+              finalizar(
+                "Escribe en el chat: " + mensaje,
+                "correcto"
+              );
+            } else {
+              finalizar(
+                "Máquina " + maquinaSeleccionada +
+                " registrada. Revisa el chat y pulsa Enviar.",
+                "correcto"
+              );
             }
-          );
+          });
         } else {
-          procesando = false;
-          actualizarPantalla();
-          mostrarEstado(
-            "Máquina " + maquinaGuardada +
-            " registrada. Escribe en el chat: " + mensaje,
+          finalizar(
+            "Chat abierto. Escribe en el chat: " + mensaje,
             "correcto"
           );
         }
-      });
+      }
+
+      if (
+        !chatCargado ||
+        typeof window.Tawk_API.setAttributes !== "function"
+      ) {
+        prepararMensaje();
+        return;
+      }
+
+      window.Tawk_API.setAttributes(
+        { maquina: maquinaSeleccionada },
+        function(error) {
+          if (error) {
+            console.error("Error al registrar la máquina:", error);
+            // El fallo del atributo no impide abrir el chat.
+            prepararMensaje();
+          } else {
+            prepararMensaje();
+          }
+        }
+      );
     });
 
-    // Si el QR contiene una máquina válida, cargarla automáticamente.
+    // Cargar automáticamente el número incluido en el QR.
     if (maquinaQR && esValido(maquinaQR)) {
       numero = maquinaQR;
     }
 
     actualizarPantalla();
 
-    // Detectar cuando el widget termina de cargar.
     window.Tawk_API.onLoad = function() {
       chatCargado = true;
       console.log("Tawk.to está listo.");
@@ -301,8 +283,7 @@
       var s0 = document.getElementsByTagName("script")[0];
 
       s1.async = true;
-      s1.src =
-        "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
+      s1.src = "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
       s1.charset = "UTF-8";
       s1.setAttribute("crossorigin", "*");
 
