@@ -173,10 +173,47 @@
     actualizarPantalla();
 
     botonChat.addEventListener("click", function () {
-      if (!/^\d{5}$/.test(numero) ||
-          Number(numero) < 10001 || Number(numero) > 11800) {
-        estado.textContent = "Ingresa un número válido entre 10001 y 11800.";
-        return;
+  if (!/^\d{5}$/.test(numero) ||
+      Number(numero) < 10001 ||
+      Number(numero) > 11800) {
+    estado.textContent =
+      "Ingresa un número válido entre 10001 y 11800.";
+    return;
+  }
+
+  etiqueta.textContent = numero;
+  estado.textContent = "Preparando solicitud de asistencia…";
+
+  if (!window.Tawk_API ||
+      typeof window.Tawk_API.maximize !== "function") {
+    estado.textContent =
+      "El chat está cargando. Espera unos segundos y vuelve a intentarlo.";
+    return;
+  }
+
+  window.Tawk_API.setAttributes(
+    { maquina: numero },
+    function (error) {
+      if (error) {
+        console.error("Error al registrar la máquina:", error);
+      }
+    }
+  );
+
+  if (typeof window.Tawk_API.setChatInputMessage === "function") {
+    window.Tawk_API.setChatInputMessage(
+      "Solicitud de asistencia para la máquina " + numero + ".",
+      function (error) {
+        if (error) {
+          console.error("No se pudo preparar el mensaje:", error);
+        }
+      }
+    );
+  }
+
+  window.Tawk_API.maximize();
+  estado.textContent = "Revisa el mensaje preparado en el chat y pulsa Enviar.";
+});
       }
 
       etiqueta.textContent = numero;
