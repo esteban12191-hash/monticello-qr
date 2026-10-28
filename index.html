@@ -7,7 +7,9 @@
   <title>Atención Monticello</title>
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       font-family: Arial, sans-serif;
@@ -26,8 +28,15 @@
       box-shadow: 0 2px 12px #0001;
     }
 
-    h1 { color: #222; font-size: 27px; }
-    p { color: #555; line-height: 1.5; }
+    h1 {
+      color: #222;
+      font-size: 27px;
+    }
+
+    p {
+      color: #555;
+      line-height: 1.5;
+    }
 
     .maquina {
       font-size: 30px;
@@ -91,32 +100,52 @@
       overflow-wrap: anywhere;
     }
 
-    .error { color: #b42318; }
-    .correcto { color: #168b42; }
+    .error {
+      color: #b42318;
+    }
+
+    .correcto {
+      color: #168b42;
+    }
   </style>
 </head>
 
 <body>
   <main class="panel">
     <h1>Atención Monticello</h1>
+
     <p>Ingresa el número de la máquina para solicitar ayuda.</p>
 
     <div class="maquina" id="numeroMostrado">_____</div>
+
     <div class="ayuda">Máquinas 60101 al 61608</div>
 
     <div class="teclado" aria-label="Teclado numérico">
       <button type="button" class="tecla" data-num="1">1</button>
       <button type="button" class="tecla" data-num="2">2</button>
       <button type="button" class="tecla" data-num="3">3</button>
+
       <button type="button" class="tecla" data-num="4">4</button>
       <button type="button" class="tecla" data-num="5">5</button>
       <button type="button" class="tecla" data-num="6">6</button>
+
       <button type="button" class="tecla" data-num="7">7</button>
       <button type="button" class="tecla" data-num="8">8</button>
       <button type="button" class="tecla" data-num="9">9</button>
-      <button type="button" class="tecla tecla-secundaria" id="borrarTodo">Borrar</button>
+
+      <button
+        type="button"
+        class="tecla tecla-secundaria"
+        id="borrarTodo"
+      >Borrar</button>
+
       <button type="button" class="tecla" data-num="0">0</button>
-      <button type="button" class="tecla tecla-secundaria" id="borrarUno">⌫</button>
+
+      <button
+        type="button"
+        class="tecla tecla-secundaria"
+        id="borrarUno"
+      >⌫</button>
     </div>
 
     <button type="button" class="principal" id="abrirChat" disabled>
@@ -124,6 +153,7 @@
     </button>
 
     <div class="estado" id="estado" role="status" aria-live="polite"></div>
+
     <p>Un trabajador atenderá tu solicitud por chat.</p>
   </main>
 
@@ -131,7 +161,7 @@
     const MIN_MAQUINA = 60101;
     const MAX_MAQUINA = 61608;
 
-    const parametros = new URLSearchParams(location.search);
+    const parametros = new URLSearchParams(window.location.search);
     const maquinaQR = parametros.get("maquina");
 
     let numero = "";
@@ -142,11 +172,12 @@
     const estado = document.getElementById("estado");
     const boton = document.getElementById("abrirChat");
 
-    // IMPORTANTE: configurar los eventos antes de cargar Tawk.to.
+    // Preparar la API antes de cargar Tawk.to.
     window.Tawk_API = window.Tawk_API || {};
 
     function esValido(valor) {
       const n = Number(valor);
+
       return /^\d{5}$/.test(valor) &&
         n >= MIN_MAQUINA &&
         n <= MAX_MAQUINA;
@@ -162,28 +193,12 @@
       estado.className = "estado " + (tipo || "");
     }
 
-    function prepararMensaje(maquina, callback) {
-      const mensaje =
-        "Hola, necesito ayuda con la máquina " + maquina + ".";
-
-      if (typeof window.Tawk_API.setChatInputMessage !== "function") {
-        callback(false, mensaje);
-        return;
-      }
-
-      window.Tawk_API.setChatInputMessage(mensaje, function(error) {
-        if (error) {
-          console.error("Error al preparar el mensaje:", error);
-          callback(false, mensaje);
-        } else {
-          callback(true, mensaje);
-        }
-      });
-    }
-
+    // Registrar el número de máquina como atributo del visitante.
     function registrarMaquina(maquina, callback) {
-      if (!chatCargado ||
-          typeof window.Tawk_API.setAttributes !== "function") {
+      if (
+        !chatCargado ||
+        typeof window.Tawk_API.setAttributes !== "function"
+      ) {
         callback(false);
         return;
       }
@@ -192,10 +207,7 @@
         { maquina: maquina },
         function(error) {
           if (error) {
-            console.error(
-              "No se pudo actualizar el atributo maquina:",
-              error
-            );
+            console.error("Error al registrar la máquina:", error);
             callback(false);
           } else {
             console.log("Máquina registrada:", maquina);
@@ -209,27 +221,32 @@
     document.querySelectorAll("[data-num]").forEach(function(tecla) {
       tecla.addEventListener("click", function() {
         if (procesando || numero.length >= 5) return;
+
         numero += tecla.dataset.num;
         mostrarEstado("", "");
         actualizarPantalla();
       });
     });
 
+    // Borrar todos los dígitos.
     document.getElementById("borrarTodo").addEventListener("click", function() {
       if (procesando) return;
+
       numero = "";
       mostrarEstado("", "");
       actualizarPantalla();
     });
 
+    // Borrar el último dígito.
     document.getElementById("borrarUno").addEventListener("click", function() {
       if (procesando) return;
+
       numero = numero.slice(0, -1);
       mostrarEstado("", "");
       actualizarPantalla();
     });
 
-    // Botón de solicitud de asistencia.
+    // Solicitar asistencia.
     boton.addEventListener("click", function() {
       if (!esValido(numero) || procesando) return;
 
@@ -237,38 +254,13 @@
       actualizarPantalla();
 
       const maquina = numero;
-
-      // Abrir Tawk.to si el widget está listo.
-      if (chatCargado &&
-          typeof window.Tawk_API.maximize === "function") {
-        window.Tawk_API.maximize();
-      }
+      const mensaje =
+        "Hola, necesito ayuda con la máquina " + maquina + ".";
 
       function terminar(texto, tipo) {
         mostrarEstado(texto, tipo);
         procesando = false;
         actualizarPantalla();
-      }
-
-      function continuar() {
-        prepararMensaje(maquina, function(preparado, mensaje) {
-          if (typeof window.Tawk_API.maximize === "function") {
-            window.Tawk_API.maximize();
-          }
-
-          if (preparado) {
-            terminar(
-              "Máquina " + maquina +
-              " registrada. Revisa el chat y pulsa Enviar.",
-              "correcto"
-            );
-          } else {
-            terminar(
-              "Escribe este mensaje en el chat: " + mensaje,
-              "correcto"
-            );
-          }
-        });
       }
 
       if (!chatCargado) {
@@ -279,51 +271,81 @@
         return;
       }
 
+      // Abrir el chat y asociar el número de máquina.
+      if (typeof window.Tawk_API.maximize === "function") {
+        window.Tawk_API.maximize();
+      }
+
       registrarMaquina(maquina, function(registrada) {
         if (!registrada) {
-          // No bloquear la atención si falla el atributo.
-          continuar();
-        } else {
-          continuar();
+          console.warn(
+            "No se pudo registrar el atributo de máquina:",
+            maquina
+          );
         }
+
+        if (
+          typeof window.Tawk_API.setChatInputMessage !== "function"
+        ) {
+          terminar(
+            "No se pudo preparar el mensaje. Escríbelo directamente en el chat.",
+            "error"
+          );
+          return;
+        }
+
+        // Intentar preparar el texto una sola vez por solicitud.
+        window.Tawk_API.setChatInputMessage(
+          mensaje,
+          function(error) {
+            if (error) {
+              console.error("Error al preparar el mensaje:", error);
+
+              terminar(
+                "Tawk.to no permite preparar el mensaje en esta conversación. Escríbelo en el chat.",
+                "error"
+              );
+              return;
+            }
+
+            terminar(
+              "Mensaje preparado para la máquina " +
+                maquina +
+                ". Revisa el chat y pulsa Enviar.",
+              "correcto"
+            );
+          }
+        );
       });
     });
 
-    // Cargar el número del QR al abrir la página.
+    // Si la URL contiene el número de máquina, cargarlo automáticamente.
     if (maquinaQR && esValido(maquinaQR)) {
       numero = maquinaQR;
     }
 
     actualizarPantalla();
 
-    // Se ejecuta cada vez que Tawk.to termina de cargar en la página.
+    // Tawk.to avisa cuando el widget está cargado.
     window.Tawk_API.onLoad = function() {
       chatCargado = true;
+
+      console.log("Tawk.to está listo.");
 
       if (maquinaQR && esValido(maquinaQR)) {
         registrarMaquina(maquinaQR, function(registrada) {
           if (!registrada) {
             console.error(
-              "No se pudo registrar automáticamente el QR:",
+              "No se pudo registrar automáticamente la máquina:",
               maquinaQR
             );
-            return;
           }
-
-          // Deja el mensaje listo para que el visitante lo envíe.
-          prepararMensaje(maquinaQR, function(preparado, mensaje) {
-            if (preparado) {
-              console.log("Mensaje preparado para:", maquinaQR);
-            } else {
-              console.log("Escribe manualmente:", mensaje);
-            }
-          });
         });
       }
     };
   </script>
 
-  <!-- Tawk.to -->
+  <!-- Carga del chat Tawk.to -->
   <script type="text/javascript">
     var Tawk_LoadStart = new Date();
 
@@ -332,7 +354,8 @@
       var s0 = document.getElementsByTagName("script")[0];
 
       s1.async = true;
-      s1.src = "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
+      s1.src =
+        "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
       s1.charset = "UTF-8";
       s1.setAttribute("crossorigin", "*");
 
