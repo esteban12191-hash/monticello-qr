@@ -37,11 +37,7 @@
       min-height: 36px;
     }
 
-    .ayuda {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 18px;
-    }
+    .ayuda { font-size: 14px; color: #666; }
 
     .teclado {
       display: grid;
@@ -104,7 +100,7 @@
     <div class="maquina" id="numeroMostrado">_____</div>
     <div class="ayuda">Máquinas 60101 al 61608</div>
 
-    <div class="teclado" aria-label="Teclado numérico">
+    <div class="teclado">
       <button type="button" class="tecla" data-num="1">1</button>
       <button type="button" class="tecla" data-num="2">2</button>
       <button type="button" class="tecla" data-num="3">3</button>
@@ -147,10 +143,9 @@
 
     function esValido(valor) {
       const n = Number(valor);
-
       return /^\d{5}$/.test(valor) &&
-        n >= MIN_MAQUINA &&
-        n <= MAX_MAQUINA;
+             n >= MIN_MAQUINA &&
+             n <= MAX_MAQUINA;
     }
 
     function actualizarPantalla() {
@@ -158,12 +153,12 @@
       boton.disabled = !esValido(numero) || procesando;
     }
 
-    function mostrarEstado(texto, tipo) {
+    function mostrarEstado(texto, tipo = "") {
       estado.textContent = texto;
-      estado.className = "estado " + (tipo || "");
+      estado.className = "estado " + tipo;
     }
 
-    function terminar(texto, tipo) {
+    function terminar(texto, tipo = "") {
       mostrarEstado(texto, tipo);
       procesando = false;
       actualizarPantalla();
@@ -179,7 +174,7 @@
         { maquina: String(maquina) },
         function(error) {
           if (error) {
-            console.error("Error al registrar la máquina:", error);
+            console.error("Error al registrar máquina:", error);
             callback(false);
           } else {
             console.log("Máquina registrada:", maquina);
@@ -189,7 +184,7 @@
       );
     }
 
-    function abrirYPrepararMensaje(maquina) {
+    function prepararChat(maquina) {
       const mensaje =
         "Hola, necesito ayuda con la máquina " + maquina + ".";
 
@@ -197,11 +192,9 @@
         window.Tawk_API.maximize();
       }
 
-      if (
-        typeof window.Tawk_API.setChatInputMessage !== "function"
-      ) {
+      if (typeof window.Tawk_API.setChatInputMessage !== "function") {
         terminar(
-          "Escribe este mensaje en el chat: " + mensaje,
+          "El chat está abierto. Escribe: " + mensaje,
           "error"
         );
         return;
@@ -211,62 +204,49 @@
         mensaje,
         function(error) {
           if (error) {
-            console.error("No se pudo preparar el mensaje:", error);
-
             terminar(
-              "No se pudo insertar el mensaje automáticamente. Escríbelo en el chat: " +
-                mensaje,
+              "Escribe en el chat: " + mensaje,
               "error"
             );
-            return;
+          } else {
+            terminar(
+              "Mensaje preparado. Revísalo y pulsa Enviar.",
+              "correcto"
+            );
           }
-
-          terminar(
-            "Mensaje preparado para la máquina " +
-              maquina +
-              ". Revisa el chat y pulsa Enviar.",
-            "correcto"
-          );
         }
       );
     }
 
-    // Teclado numérico.
     document.querySelectorAll("[data-num]").forEach(function(tecla) {
       tecla.addEventListener("click", function() {
         if (procesando || numero.length >= 5) return;
 
         numero += tecla.dataset.num;
-        mostrarEstado("", "");
+        mostrarEstado("");
         actualizarPantalla();
       });
     });
 
     document.getElementById("borrarTodo").addEventListener("click", function() {
       if (procesando) return;
-
       numero = "";
-      mostrarEstado("", "");
+      mostrarEstado("");
       actualizarPantalla();
     });
 
     document.getElementById("borrarUno").addEventListener("click", function() {
       if (procesando) return;
-
       numero = numero.slice(0, -1);
-      mostrarEstado("", "");
+      mostrarEstado("");
       actualizarPantalla();
     });
 
-    // Botón Solicitar asistencia.
     boton.addEventListener("click", function() {
       if (!esValido(numero) || procesando) return;
 
       if (!chatCargado) {
-        mostrarEstado(
-          "El chat aún está cargando. Espera unos segundos e inténtalo otra vez.",
-          "error"
-        );
+        mostrarEstado("El chat está cargando. Inténtalo nuevamente.", "error");
         return;
       }
 
@@ -277,83 +257,84 @@
 
       registrarMaquina(maquina, function(registrada) {
         if (!registrada) {
-          console.warn("No se confirmó el registro de la máquina:", maquina);
+          console.warn("No se confirmó el registro de la máquina.");
         }
 
-        abrirYPrepararMensaje(maquina);
+        prepararChat(maquina);
       });
     });
 
-    // Cargar número de máquina desde el QR.
     if (maquinaQR && esValido(maquinaQR)) {
       numero = maquinaQR;
     }
 
     actualizarPantalla();
 
-    // Tawk.to está listo.
+    /*
+      Los eventos se definen antes de cargar el script de Tawk.to.
+    */
+
     window.Tawk_API.onLoad = function() {
       chatCargado = true;
-      console.log("Tawk.to está listo.");
+      console.log("Chat de Tawk.to cargado.");
 
       if (maquinaQR && esValido(maquinaQR)) {
         registrarMaquina(maquinaQR, function(registrada) {
-          if (!registrada) {
-            console.error("No se pudo registrar el QR:", maquinaQR);
-          }
+          console.log(
+            registrada
+              ? "QR asociado a máquina " + maquinaQR
+              : "No se pudo asociar la máquina del QR."
+          );
         });
       }
     };
 
-    // Cerrar el chat después de recibir un mensaje con un número
-    // de máquina dentro del rango permitido.
+    window.Tawk_API.onChatStarted = function() {
+      cierreSolicitado = false;
+      console.log("Conversación iniciada.");
+    };
+
     window.Tawk_API.onChatMessageVisitor = function(data) {
-      // En versiones recientes, Tawk.to entrega un objeto.
-      // También aceptamos una cadena por compatibilidad.
-      const texto = typeof data === "string"
-        ? data
-        : (data && typeof data.message === "string"
-            ? data.message
-            : "");
+      console.log("Evento de mensaje del visitante:", data);
 
-      if (!texto || cierreSolicitado) return;
+      /*
+        Se contemplan varias formas posibles del dato recibido.
+        Si Tawk no entrega el texto aquí, no se puede confirmar
+        que el mensaje contenga el número de máquina.
+      */
+      let texto = "";
 
-      const numeros = texto.match(/\b\d{5}\b/g) || [];
+      if (typeof data === "string") {
+        texto = data;
+      } else if (data && typeof data.message === "string") {
+        texto = data.message;
+      } else if (data && typeof data.text === "string") {
+        texto = data.text;
+      } else if (
+        data && data.message &&
+        typeof data.message.text === "string"
+      ) {
+        texto = data.message.text;
+      }
 
-      const maquinaEncontrada = numeros.find(function(n) {
-        return esValido(n);
-      });
+      const coincidencias = texto.match(/\b\d{5}\b/g) || [];
+      const maquinaEncontrada =
+        coincidencias.find(function(n) { return esValido(n); });
 
-      if (!maquinaEncontrada) return;
+      if (!maquinaEncontrada || cierreSolicitado) return;
 
       cierreSolicitado = true;
+      console.log("Mensaje de asistencia detectado:", maquinaEncontrada);
 
-      console.log(
-        "Mensaje recibido para la máquina:",
-        maquinaEncontrada
-      );
-
-      // Dar un breve margen para que el mensaje se registre.
       setTimeout(function() {
-        if (
-          typeof window.Tawk_API.isChatOngoing === "function" &&
-          window.Tawk_API.isChatOngoing() &&
-          typeof window.Tawk_API.endChat === "function"
-        ) {
+        if (typeof window.Tawk_API.endChat === "function") {
           window.Tawk_API.endChat();
           console.log("Se solicitó finalizar el chat.");
         } else {
-          console.warn(
-            "No se pudo cerrar el chat o ya no existe una conversación activa."
-          );
+          console.warn("La función endChat no está disponible.");
+          cierreSolicitado = false;
         }
       }, 1500);
-    };
-
-    // Permitir que una conversación nueva vuelva a activar el cierre.
-    window.Tawk_API.onChatStarted = function() {
-      cierreSolicitado = false;
-      console.log("Nueva conversación iniciada.");
     };
 
     window.Tawk_API.onChatEnded = function() {
@@ -362,7 +343,7 @@
     };
   </script>
 
-  <!-- Carga de Tawk.to -->
+  <!-- Este código carga el widget integrado en la página QR. -->
   <script type="text/javascript">
     var Tawk_LoadStart = new Date();
 
