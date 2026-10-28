@@ -90,13 +90,7 @@
     .error { color: #b42318; }
     .correcto { color: #168b42; }
 
-    #chatAyuda {
-      margin-top: 20px;
-      text-align: left;
-    }
-
-    #copiarMensaje {
-      display: none;
+    .secundario {
       width: 100%;
       margin-top: 10px;
       padding: 12px;
@@ -107,6 +101,8 @@
       font-weight: bold;
       cursor: pointer;
     }
+
+    #copiarMensaje { display: none; }
   </style>
 </head>
 
@@ -139,16 +135,11 @@
 
     <div class="estado" id="estado" role="status" aria-live="polite"></div>
 
-    <button type="button" id="copiarMensaje">
+    <button type="button" class="secundario" id="copiarMensaje">
       Copiar mensaje de asistencia
     </button>
 
     <p>Un trabajador atenderá tu solicitud por chat.</p>
-
-    <section id="chatAyuda">
-      <p><strong>Chat de asistencia</strong></p>
-      <p>Si el chat no aparece aquí, utiliza el botón de asistencia para abrirlo.</p>
-    </section>
   </main>
 
   <script>
@@ -184,7 +175,7 @@
       estado.className = "estado " + tipo;
     }
 
-    function mensajeActual() {
+    function obtenerMensaje() {
       return "Hola, necesito ayuda con la máquina " + numero + ".";
     }
 
@@ -199,7 +190,7 @@
           { maquina: String(maquina) },
           function(error) {
             if (error) {
-              console.error("Error al registrar máquina:", error);
+              console.error("Error al registrar la máquina:", error);
               resolve(false);
             } else {
               console.log("Máquina registrada:", maquina);
@@ -213,10 +204,8 @@
     document.querySelectorAll("[data-num]").forEach(function(tecla) {
       tecla.addEventListener("click", function() {
         if (numero.length >= 5) return;
-
         numero += tecla.dataset.num;
         mostrarEstado("");
-        botonCopiar.style.display = "none";
         actualizarPantalla();
       });
     });
@@ -231,18 +220,17 @@
     document.getElementById("borrarUno").addEventListener("click", function() {
       numero = numero.slice(0, -1);
       mostrarEstado("");
-      botonCopiar.style.display = "none";
       actualizarPantalla();
     });
 
     botonCopiar.addEventListener("click", async function() {
-      const texto = mensajeActual();
+      const mensaje = obtenerMensaje();
 
       try {
-        await navigator.clipboard.writeText(texto);
-        mostrarEstado("Mensaje copiado: " + texto, "correcto");
+        await navigator.clipboard.writeText(mensaje);
+        mostrarEstado("Mensaje copiado. Pégalo en el chat.", "correcto");
       } catch (error) {
-        mostrarEstado("Copia este mensaje: " + texto, "error");
+        mostrarEstado("Copia este mensaje: " + mensaje, "error");
       }
     });
 
@@ -250,46 +238,49 @@
       if (!esValido(numero)) return;
 
       const maquina = String(numero);
-      const texto = mensajeActual();
+      const mensaje = obtenerMensaje();
 
-      mostrarEstado("Preparando asistencia para la máquina " + maquina + "…");
       botonCopiar.style.display = "block";
 
-      // El registro del atributo no cambia los mensajes anteriores.
+      mostrarEstado("Preparando asistencia para la máquina " + maquina + "…");
+
       await registrarMaquina(maquina);
+
+      if (!chatCargado) {
+        mostrarEstado(
+          "El chat aún está cargando. Puedes copiar el mensaje: " + mensaje,
+          "error"
+        );
+        return;
+      }
 
       if (typeof window.Tawk_API.maximize === "function") {
         window.Tawk_API.maximize();
       }
 
-      if (typeof window.Tawk_API.setChatInputMessage === "function") {
-        window.Tawk_API.setChatInputMessage(texto, function(error) {
-          if (error) {
-            mostrarEstado(
-              "No se pudo insertar el mensaje. Cópialo y pégalo en el chat: " + texto,
-              "error"
-            );
-          } else {
-            mostrarEstado(
-              "Mensaje preparado para la máquina " + maquina +
-              ". Revisa el número antes de enviarlo.",
-              "correcto"
-            );
-          }
-        });
-      } else {
+      if (typeof window.Tawk_API.setChatInputMessage !== "function") {
         mostrarEstado(
-          "Abre el chat y escribe este mensaje: " + texto,
+          "Escribe este mensaje en el chat: " + mensaje,
           "error"
         );
+        return;
       }
 
-      if (!chatCargado) {
-        mostrarEstado(
-          "El chat todavía está cargando. Puedes copiar el mensaje: " + texto,
-          "error"
-        );
-      }
+      window.Tawk_API.setChatInputMessage(mensaje, function(error) {
+        if (error) {
+          console.error("No se pudo preparar el mensaje:", error);
+          mostrarEstado(
+            "Tawk.to no aceptó el mensaje. Cópialo y pégalo en el chat: " + mensaje,
+            "error"
+          );
+        } else {
+          mostrarEstado(
+            "Mensaje preparado para la máquina " + maquina +
+            ". Verifica el número y pulsa Enviar.",
+            "correcto"
+          );
+        }
+      });
     });
 
     if (maquinaQR && esValido(maquinaQR)) {
@@ -300,7 +291,7 @@
 
     window.Tawk_API.onLoad = function() {
       chatCargado = true;
-      console.log("Widget de Tawk.to cargado.");
+      console.log("Widget Tawk.to cargado.");
 
       if (maquinaQR && esValido(maquinaQR)) {
         registrarMaquina(maquinaQR);
@@ -308,7 +299,7 @@
     };
   </script>
 
-  <!-- Widget oficial integrado de Tawk.to -->
+  <!-- ID del widget confirmado en tu captura de Tawk.to -->
   <script type="text/javascript">
     var Tawk_LoadStart = new Date();
 
@@ -317,7 +308,7 @@
       var s0 = document.getElementsByTagName("script")[0];
 
       s1.async = true;
-      s1.src = "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5iqq6dv";
+      s1.src = "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5ii42l2";
       s1.charset = "UTF-8";
       s1.setAttribute("crossorigin", "*");
 
