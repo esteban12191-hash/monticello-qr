@@ -29,7 +29,6 @@
 
     h1 { font-size: 27px; margin-bottom: 10px; }
     p { color: #555; line-height: 1.5; }
-
     .etiqueta { font-size: 14px; color: #666; }
 
     .maquina {
@@ -80,7 +79,6 @@
 
     .error { color: #b42318; }
     .correcto { color: #168b42; }
-
     #copiarMensaje { display: none; }
   </style>
 </head>
@@ -101,7 +99,8 @@
       Solicitar asistencia
     </button>
 
-    <div class="estado" id="estado" role="status" aria-live="polite"></div>
+    <div class="estado" id="estado" role="status"
+         aria-live="polite"></div>
 
     <button type="button" class="secundario" id="copiarMensaje">
       Copiar mensaje de asistencia
@@ -183,6 +182,32 @@
       });
     }
 
+    function registrarEvento(maquina) {
+      return new Promise(function(resolve) {
+        if (typeof window.Tawk_API.addEvent !== "function") {
+          resolve(false);
+          return;
+        }
+
+        window.Tawk_API.addEvent(
+          "solicitud-asistencia",
+          {
+            maquina: String(maquina),
+            mensaje: mensajePara(maquina)
+          },
+          function(error) {
+            if (error) {
+              console.error("Error registrando evento:", error);
+              resolve(false);
+            } else {
+              console.log("Evento registrado para máquina:", maquina);
+              resolve(true);
+            }
+          }
+        );
+      });
+    }
+
     async function copiarTexto(texto) {
       try {
         await navigator.clipboard.writeText(texto);
@@ -191,96 +216,61 @@
           "correcto"
         );
       } catch (error) {
-        mostrarEstado(
-          "Copia este mensaje: " + texto,
-          "error"
-        );
+        mostrarEstado("Copia este mensaje: " + texto, "error");
       }
     }
 
     botonCopiar.addEventListener("click", function() {
       const maquina = obtenerMaquinaQR();
-
       if (!esValida(maquina)) return;
-
       copiarTexto(mensajePara(maquina));
     });
 
     boton.addEventListener("click", async function() {
-      // Leer el QR nuevamente al pulsar, no reutilizar un número antiguo.
       const maquina = obtenerMaquinaQR();
 
-      if (!esValida(maquina) || procesando) {
+      if (!esValida(maquina) || procesando || !tawkListo) {
         actualizarPantalla();
-        return;
-      }
-
-      if (!tawkListo) {
-        mostrarEstado("El chat está cargando. Inténtalo nuevamente.", "error");
         return;
       }
 
       procesando = true;
       actualizarPantalla();
-
-      const mensaje = mensajePara(maquina);
       botonCopiar.style.display = "block";
 
-      mostrarEstado("Registrando máquina " + maquina + "…");
+      mostrarEstado("Registrando solicitud para máquina " + maquina + "…");
 
       try {
         const registrada = await registrarMaquina(maquina);
-
-        if (!registrada) {
-          console.warn(
-            "No se confirmó el atributo de máquina; se usará el número del QR."
-          );
-        }
+        const eventoRegistrado = await registrarEvento(maquina);
 
         if (typeof window.Tawk_API.maximize === "function") {
           window.Tawk_API.maximize();
         }
 
-        if (typeof window.Tawk_API.setChatInputMessage !== "function") {
+        if (registrada && eventoRegistrado) {
           mostrarEstado(
-            "El chat está abierto. Copia el mensaje y envíalo: " + mensaje,
+            "Solicitud registrada para la máquina " + maquina +
+            ". Continúa en el chat para recibir ayuda.",
+            "correcto"
+          );
+          botonCopiar.style.display = "none";
+        } else {
+          mostrarEstado(
+            "Chat abierto. Si necesitas identificar la máquina en el mensaje, " +
+            "pulsa Copiar mensaje de asistencia.",
             "error"
           );
-          return;
+        }
+      } catch (error) {
+        console.error("Error en solicitud de asistencia:", error);
+
+        if (typeof window.Tawk_API.maximize === "function") {
+          window.Tawk_API.maximize();
         }
 
-        await new Promise(function(resolve) {
-          window.Tawk_API.setChatInputMessage(
-            mensaje,
-            function(error) {
-              if (error) {
-                console.error(
-                  "Tawk.to rechazó el mensaje:",
-                  error
-                );
-
-                mostrarEstado(
-                  "Tawk.to no aceptó el texto. Copia el mensaje de la máquina " +
-                  maquina + " y pégalo en el chat.",
-                  "error"
-                );
-              } else {
-                mostrarEstado(
-                  "Mensaje preparado para la máquina " + maquina +
-                  ". Revísalo y pulsa Enviar.",
-                  "correcto"
-                );
-                botonCopiar.style.display = "none";
-              }
-
-              resolve();
-            }
-          );
-        });
-      } catch (error) {
-        console.error("Error al solicitar asistencia:", error);
         mostrarEstado(
-          "No se pudo preparar el mensaje. Puedes copiarlo y pegarlo en el chat.",
+          "Chat abierto. Puedes copiar el mensaje y pegarlo en el chat.",
           "error"
         );
       } finally {
@@ -289,10 +279,9 @@
       }
     });
 
-    // El callback se define antes de cargar el script oficial.
+    // Definir el evento antes de cargar el widget.
     window.Tawk_API.onLoad = function() {
       tawkListo = true;
-      console.log("Tawk.to cargado.");
 
       const maquina = obtenerMaquinaQR();
 
@@ -306,7 +295,7 @@
     actualizarPantalla();
   </script>
 
-  <!-- Código oficial del widget de Tawk.to -->
+  <!-- Widget oficial de Tawk.to -->
   <script type="text/javascript">
     var Tawk_LoadStart = new Date();
 
@@ -315,8 +304,7 @@
       var s0 = document.getElementsByTagName("script")[0];
 
       s1.async = true;
-      s1.src =
-        "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5ii42l2";
+      s1.src = "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5ii42l2";
       s1.charset = "UTF-8";
       s1.setAttribute("crossorigin", "*");
 
