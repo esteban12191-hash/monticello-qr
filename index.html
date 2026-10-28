@@ -28,8 +28,16 @@
     }
 
     h1 { font-size: 27px; margin-bottom: 10px; }
-    p { color: #555; line-height: 1.5; }
-    .etiqueta { font-size: 14px; color: #666; }
+
+    p {
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .etiqueta {
+      font-size: 14px;
+      color: #666;
+    }
 
     .maquina {
       margin: 16px 0 8px;
@@ -44,7 +52,7 @@
       margin-top: 24px;
       padding: 17px 12px;
       background: #168b42;
-      color: #fff;
+      color: white;
       border: 0;
       border-radius: 10px;
       font-size: 18px;
@@ -79,6 +87,7 @@
 
     .error { color: #b42318; }
     .correcto { color: #168b42; }
+
     #copiarMensaje { display: none; }
   </style>
 </head>
@@ -130,6 +139,7 @@
 
     function esValida(valor) {
       const n = Number(valor);
+
       return /^\d{5}$/.test(valor) &&
         n >= MIN_MAQUINA &&
         n <= MAX_MAQUINA;
@@ -153,6 +163,7 @@
       } else {
         numeroMaquina.textContent = "No identificado";
         boton.disabled = true;
+
         mostrarEstado(
           "El QR no contiene un número de máquina válido.",
           "error"
@@ -174,7 +185,6 @@
               console.error("Error registrando máquina:", error);
               resolve(false);
             } else {
-              console.log("Máquina registrada:", maquina);
               resolve(true);
             }
           }
@@ -200,7 +210,6 @@
               console.error("Error registrando evento:", error);
               resolve(false);
             } else {
-              console.log("Evento registrado para máquina:", maquina);
               resolve(true);
             }
           }
@@ -208,21 +217,48 @@
       });
     }
 
+    function escribirMensajeEnChat(maquina) {
+      return new Promise(function(resolve) {
+        const api = window.Tawk_API;
+        const mensaje = mensajePara(maquina);
+
+        if (typeof api.setChatInputMessage !== "function") {
+          resolve(false);
+          return;
+        }
+
+        api.setChatInputMessage(mensaje, function(error) {
+          if (error) {
+            console.error("No se pudo rellenar el mensaje:", error);
+            resolve(false);
+          } else {
+            resolve(true);
+          }
+        });
+      });
+    }
+
     async function copiarTexto(texto) {
       try {
         await navigator.clipboard.writeText(texto);
+
         mostrarEstado(
           "Mensaje copiado. Pégalo en el chat y pulsa Enviar.",
           "correcto"
         );
       } catch (error) {
-        mostrarEstado("Copia este mensaje: " + texto, "error");
+        mostrarEstado(
+          "Copia este mensaje: " + texto,
+          "error"
+        );
       }
     }
 
     botonCopiar.addEventListener("click", function() {
       const maquina = obtenerMaquinaQR();
+
       if (!esValida(maquina)) return;
+
       copiarTexto(mensajePara(maquina));
     });
 
@@ -236,29 +272,41 @@
 
       procesando = true;
       actualizarPantalla();
+
       botonCopiar.style.display = "block";
 
-      mostrarEstado("Registrando solicitud para máquina " + maquina + "…");
+      mostrarEstado(
+        "Registrando solicitud para máquina " + maquina + "…"
+      );
 
       try {
         const registrada = await registrarMaquina(maquina);
         const eventoRegistrado = await registrarEvento(maquina);
 
+        // Abrir el chat antes de intentar rellenar el mensaje.
         if (typeof window.Tawk_API.maximize === "function") {
           window.Tawk_API.maximize();
         }
 
-        if (registrada && eventoRegistrado) {
+        // Intentar escribir el mensaje en el cuadro del chat.
+        const mensajeEscrito = await escribirMensajeEnChat(maquina);
+
+        if (mensajeEscrito) {
           mostrarEstado(
-            "Solicitud registrada para la máquina " + maquina +
-            ". Continúa en el chat para recibir ayuda.",
+            "Mensaje preparado para la máquina " + maquina +
+            ". Revisa el chat y pulsa Enviar.",
             "correcto"
           );
           botonCopiar.style.display = "none";
+        } else if (registrada && eventoRegistrado) {
+          mostrarEstado(
+            "Solicitud registrada para la máquina " + maquina +
+            ". Si el mensaje no aparece en el chat, utiliza el botón para copiarlo.",
+            "error"
+          );
         } else {
           mostrarEstado(
-            "Chat abierto. Si necesitas identificar la máquina en el mensaje, " +
-            "pulsa Copiar mensaje de asistencia.",
+            "Chat abierto. Si el mensaje no aparece, pulsa Copiar mensaje de asistencia.",
             "error"
           );
         }
@@ -270,7 +318,7 @@
         }
 
         mostrarEstado(
-          "Chat abierto. Puedes copiar el mensaje y pegarlo en el chat.",
+          "Chat abierto. Si no aparece el mensaje, utiliza el botón para copiarlo.",
           "error"
         );
       } finally {
@@ -279,7 +327,7 @@
       }
     });
 
-    // Definir el evento antes de cargar el widget.
+    // Se establece antes de cargar el widget.
     window.Tawk_API.onLoad = function() {
       tawkListo = true;
 
@@ -291,8 +339,6 @@
 
       actualizarPantalla();
     };
-
-    actualizarPantalla();
   </script>
 
   <!-- Widget oficial de Tawk.to -->
@@ -304,7 +350,8 @@
       var s0 = document.getElementsByTagName("script")[0];
 
       s1.async = true;
-      s1.src = "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5ii42l2";
+      s1.src =
+        "https://embed.tawk.to/6ada66eb3ac89a346526b3ec/1k5ii42l2";
       s1.charset = "UTF-8";
       s1.setAttribute("crossorigin", "*");
 
